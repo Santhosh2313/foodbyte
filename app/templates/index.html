@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Food Reservation</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="hero">
+        <p class="hero-kicker">Localhost Dining Desk</p>
+        <h1>Online Food Reservation System</h1>
+        <p class="hero-subtitle">
+          Manage bookings and table flow with a vibrant control panel.
+        </p>
+        <div class="hero-symbol" aria-hidden="true">
+          <span class="plate"></span>
+          <span class="fork"></span>
+          <span class="knife"></span>
+        </div>
+      </header>
+
+      <section class="card accent-card">
+        <h2>Create Reservation</h2>
+        <form id="reservation-form">
+          <label>
+            Customer Name
+            <input type="text" name="customer_name" required />
+          </label>
+
+          <label>
+            Phone
+            <input type="tel" name="phone" required />
+          </label>
+
+          <label>
+            Email
+            <input type="email" name="email" required />
+          </label>
+
+          <label>
+            Party Size
+            <input type="number" name="party_size" min="1" required />
+          </label>
+
+          <label>
+            Reservation Time
+            <input type="datetime-local" name="reservation_time" required />
+          </label>
+
+          <label>
+            Special Request
+            <textarea name="special_request" rows="3" placeholder="Optional"></textarea>
+          </label>
+
+          <button type="submit">Save Reservation</button>
+        </form>
+        <p id="form-message"></p>
+      </section>
+
+      <section class="card soft-card">
+        <h2>Upcoming Reservations</h2>
+        <div id="list-container">
+          <p>Loading reservations...</p>
+        </div>
+      </section>
+
+      <section class="card sql-card">
+        <h2>DBMS Operations (Local)</h2>
+        <form id="sql-form">
+          <label>
+            SQL Command (INSERT / UPDATE / DELETE / ALTER / DROP)
+            <textarea
+              name="sql"
+              rows="5"
+              placeholder="Example: UPDATE reservation SET party_size = 6 WHERE id = 1"
+              required
+            ></textarea>
+          </label>
+          <button type="submit">Run SQL</button>
+        </form>
+        <p id="sql-message"></p>
+      </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+  </body>
+</html>
