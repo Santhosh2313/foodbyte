@@ -24,6 +24,7 @@
       <section class="card accent-card">
         <h2>Create Reservation</h2>
         <form id="reservation-form">
+          <input type="hidden" name="id" />
           <label>
             Customer Name
             <input type="text" name="customer_name" required />
@@ -54,13 +55,23 @@
             <textarea name="special_request" rows="3" placeholder="Optional"></textarea>
           </label>
 
-          <button type="submit">Save Reservation</button>
+          <div class="row actions-row">
+            <button id="save-btn" type="submit">Save Reservation</button>
+            <button id="cancel-edit-btn" type="button" class="secondary-btn">Cancel Edit</button>
+          </div>
         </form>
         <p id="form-message"></p>
       </section>
 
       <section class="card soft-card">
-        <h2>Upcoming Reservations</h2>
+        <div class="row">
+          <h2>Reservations</h2>
+          <button id="refresh-list-btn" type="button" class="secondary-btn">Refresh</button>
+        </div>
+        <div class="row actions-row">
+          <button id="view-upcoming-btn" type="button">Upcoming</button>
+          <button id="view-all-btn" type="button" class="secondary-btn">All</button>
+        </div>
         <div id="list-container">
           <p>Loading reservations...</p>
         </div>

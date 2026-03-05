@@ -70,6 +70,41 @@ def create_reservation():
     return jsonify(reservation.to_dict()), 201
 
 
+@bp.put('/api/reservations/<int:reservation_id>')
+def update_reservation(reservation_id: int):
+    reservation = Reservation.query.get_or_404(reservation_id)
+    payload = request.get_json(silent=True) or {}
+
+    required_fields = ['customer_name', 'phone', 'email', 'party_size', 'reservation_time']
+    missing = [field for field in required_fields if not payload.get(field)]
+    if missing:
+        return jsonify({'error': f"Missing fields: {', '.join(missing)}"}), 400
+
+    try:
+        party_size = int(payload['party_size'])
+        raw_reservation_time = datetime.fromisoformat(payload['reservation_time'])
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid party_size or reservation_time format.'}), 400
+
+    if party_size < 1:
+        return jsonify({'error': 'party_size must be at least 1.'}), 400
+
+    if raw_reservation_time.tzinfo is not None:
+        reservation_time = raw_reservation_time.astimezone(timezone.utc).replace(tzinfo=None)
+    else:
+        reservation_time = raw_reservation_time
+
+    reservation.customer_name = payload['customer_name'].strip()
+    reservation.phone = payload['phone'].strip()
+    reservation.email = payload['email'].strip()
+    reservation.party_size = party_size
+    reservation.reservation_time = reservation_time
+    reservation.special_request = (payload.get('special_request') or '').strip()
+
+    db.session.commit()
+    return jsonify(reservation.to_dict())
+
+
 @bp.delete('/api/reservations/<int:reservation_id>')
 def delete_reservation(reservation_id: int):
     reservation = Reservation.query.get_or_404(reservation_id)

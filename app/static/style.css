@@ -190,11 +190,25 @@ button:active {
   transform: translateY(1px);
 }
 
+.secondary-btn {
+  background: linear-gradient(135deg, #f3e1d1, #e7d0bd);
+  color: var(--text);
+  border: 1px solid #ddbda1;
+}
+
 #form-message,
 #sql-message {
   margin: 8px 0 0;
   min-height: 20px;
   font-weight: 600;
+}
+
+.actions-row {
+  align-items: center;
+}
+
+.actions-row button {
+  min-width: 120px;
 }
 
 .reservation-item {
@@ -216,6 +230,14 @@ button:active {
 
 .delete-btn {
   background: linear-gradient(135deg, #be3b2f, var(--danger));
+}
+
+.action-buttons {
+  gap: 8px;
+}
+
+#cancel-edit-btn {
+  display: none;
 }
 
 @keyframes rise-in {
