@@ -28,8 +28,7 @@ Important: SQLite is not persistent on Vercel serverless functions. Use a hosted
 
 1. Push this repo to GitHub.
 2. In Vercel, import this repository.
-3. Set environment variable:
-   - `DATABASE_URL` = your Postgres connection string
+3. Set environment variable:- `DATABASE_URL` = your Postgres connection string
 4. Deploy.
 
 This repo already includes:

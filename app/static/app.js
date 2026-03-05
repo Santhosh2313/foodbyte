@@ -14,92 +14,111 @@ function formatDate(iso) {
 }
 
 async function loadReservations() {
-  const response = await fetch('/api/reservations');
-  const reservations = await response.json();
+  if (!listContainer) return;
 
-  if (!reservations.length) {
-    listContainer.innerHTML = '<p>No reservations yet.</p>';
-    return;
-  }
+  try {
+    const response = await fetch('/api/reservations/upcoming');
+    if (!response.ok) throw new Error('Failed to load upcoming reservations.');
 
-  listContainer.innerHTML = reservations
-    .map(
-      (r) => `
-      <article class="reservation-item">
-        <div class="row">
-          <strong>${r.customer_name}</strong>
-          <button class="delete-btn" data-id="${r.id}">Delete</button>
-        </div>
-        <div>Phone: ${r.phone}</div>
-        <div>Email: ${r.email}</div>
-        <div>Party Size: ${r.party_size}</div>
-        <div>Time: ${formatDate(r.reservation_time)}</div>
-        <div>Special Request: ${r.special_request || 'None'}</div>
-      </article>
-    `
-    )
-    .join('');
+    const reservations = await response.json();
+    if (!Array.isArray(reservations) || !reservations.length) {
+      listContainer.innerHTML = '<p>No upcoming reservations.</p>';
+      return;
+    }
 
-  document.querySelectorAll('.delete-btn').forEach((button) => {
-    button.addEventListener('click', async () => {
-      const id = button.dataset.id;
-      await fetch(`/api/reservations/${id}`, { method: 'DELETE' });
-      await loadReservations();
+    listContainer.innerHTML = reservations
+      .map(
+        (r) => `
+        <article class="reservation-item">
+          <div class="row">
+            <strong>${r.customer_name}</strong>
+            <button class="delete-btn" data-id="${r.id}">Delete</button>
+          </div>
+          <div>Phone: ${r.phone}</div>
+          <div>Email: ${r.email}</div>
+          <div>Party Size: ${r.party_size}</div>
+          <div>Time: ${formatDate(r.reservation_time)}</div>
+          <div>Special Request: ${r.special_request || 'None'}</div>
+        </article>
+      `
+      )
+      .join('');
+
+    document.querySelectorAll('.delete-btn').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const id = button.dataset.id;
+        await fetch(`/api/reservations/${id}`, { method: 'DELETE' });
+        await loadReservations();
+      });
     });
+  } catch (_error) {
+    listContainer.innerHTML = '<p>Could not load upcoming reservations right now.</p>';
+  }
+}
+
+if (form) {
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (formMessage) formMessage.textContent = '';
+
+    const formData = new FormData(form);
+    const payload = Object.fromEntries(formData.entries());
+    payload.party_size = Number(payload.party_size);
+    payload.reservation_time = normalizeDateTimeLocal(payload.reservation_time);
+
+    const response = await fetch('/api/reservations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const body = await response.json();
+    if (!response.ok) {
+      if (formMessage) {
+        formMessage.textContent = body.error || 'Failed to save reservation.';
+        formMessage.style.color = '#b42318';
+      }
+      return;
+    }
+
+    form.reset();
+    if (formMessage) {
+      formMessage.textContent = 'Reservation saved successfully.';
+      formMessage.style.color = '#027a48';
+    }
+    await loadReservations();
   });
 }
 
-form.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  formMessage.textContent = '';
-
-  const formData = new FormData(form);
-  const payload = Object.fromEntries(formData.entries());
-  payload.party_size = Number(payload.party_size);
-  payload.reservation_time = normalizeDateTimeLocal(payload.reservation_time);
-
-  const response = await fetch('/api/reservations', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-
-  const body = await response.json();
-  if (!response.ok) {
-    formMessage.textContent = body.error || 'Failed to save reservation.';
-    formMessage.style.color = '#b42318';
-    return;
-  }
-
-  form.reset();
-  formMessage.textContent = 'Reservation saved successfully.';
-  formMessage.style.color = '#027a48';
-  await loadReservations();
-});
-
 loadReservations();
 
-sqlForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  sqlMessage.textContent = '';
+if (sqlForm) {
+  sqlForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (sqlMessage) sqlMessage.textContent = '';
 
-  const formData = new FormData(sqlForm);
-  const payload = Object.fromEntries(formData.entries());
+    const formData = new FormData(sqlForm);
+    const payload = Object.fromEntries(formData.entries());
 
-  const response = await fetch('/api/db/execute', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    const response = await fetch('/api/db/execute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const body = await response.json();
+    if (!response.ok) {
+      if (sqlMessage) {
+        sqlMessage.textContent = body.error || 'Failed to execute SQL.';
+        sqlMessage.style.color = '#b42318';
+      }
+      return;
+    }
+
+    if (sqlMessage) {
+      sqlMessage.textContent = `${body.message} Affected rows: ${body.rowcount}.`;
+      sqlMessage.style.color = '#027a48';
+    }
+    await loadReservations();
   });
-
-  const body = await response.json();
-  if (!response.ok) {
-    sqlMessage.textContent = body.error || 'Failed to execute SQL.';
-    sqlMessage.style.color = '#b42318';
-    return;
-  }
-
-  sqlMessage.textContent = `${body.message} Affected rows: ${body.rowcount}.`;
-  sqlMessage.style.color = '#027a48';
-  await loadReservations();
-});
+}

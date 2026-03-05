@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import Blueprint, jsonify, render_template, request
 from sqlalchemy import text
@@ -20,6 +20,17 @@ def list_reservations():
     return jsonify([reservation.to_dict() for reservation in reservations])
 
 
+@bp.get('/api/reservations/upcoming')
+def list_upcoming_reservations():
+    now_utc = datetime.utcnow()
+    reservations = (
+        Reservation.query.filter(Reservation.reservation_time >= now_utc)
+        .order_by(Reservation.reservation_time.asc())
+        .all()
+    )
+    return jsonify([reservation.to_dict() for reservation in reservations])
+
+
 @bp.post('/api/reservations')
 def create_reservation():
     payload = request.get_json(silent=True) or {}
@@ -31,9 +42,18 @@ def create_reservation():
 
     try:
         party_size = int(payload['party_size'])
-        reservation_time = datetime.fromisoformat(payload['reservation_time'])
+        raw_reservation_time = datetime.fromisoformat(payload['reservation_time'])
     except (ValueError, TypeError):
         return jsonify({'error': 'Invalid party_size or reservation_time format.'}), 400
+
+    if party_size < 1:
+        return jsonify({'error': 'party_size must be at least 1.'}), 400
+
+    # Normalize to naive UTC before persistence so comparisons remain consistent.
+    if raw_reservation_time.tzinfo is not None:
+        reservation_time = raw_reservation_time.astimezone(timezone.utc).replace(tzinfo=None)
+    else:
+        reservation_time = raw_reservation_time
 
     reservation = Reservation(
         customer_name=payload['customer_name'].strip(),
