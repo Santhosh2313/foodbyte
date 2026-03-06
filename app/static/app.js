@@ -12,6 +12,15 @@ const viewAllBtn = document.getElementById('view-all-btn');
 
 let listMode = 'upcoming';
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function normalizeDateTimeLocal(dateTimeLocalValue) {
   // datetime-local input gives YYYY-MM-DDTHH:mm; backend accepts ISO string.
   return new Date(dateTimeLocalValue).toISOString();
@@ -93,17 +102,17 @@ async function loadReservations() {
         (r) => `
         <article class="reservation-item">
           <div class="row">
-            <strong>${r.customer_name}</strong>
+            <strong>${escapeHtml(r.customer_name)}</strong>
             <div class="row action-buttons">
               <button class="edit-btn secondary-btn" data-id="${r.id}">Edit</button>
               <button class="delete-btn" data-id="${r.id}">Delete</button>
             </div>
           </div>
-          <div>Phone: ${r.phone}</div>
-          <div>Email: ${r.email}</div>
-          <div>Party Size: ${r.party_size}</div>
-          <div>Time: ${formatDate(r.reservation_time)}</div>
-          <div>Special Request: ${r.special_request || 'None'}</div>
+          <div>Phone: ${escapeHtml(r.phone)}</div>
+          <div>Email: ${escapeHtml(r.email)}</div>
+          <div>Party Size: ${escapeHtml(r.party_size)}</div>
+          <div>Time: ${escapeHtml(formatDate(r.reservation_time))}</div>
+          <div>Special Request: ${escapeHtml(r.special_request || 'None')}</div>
         </article>
       `
       )
@@ -120,16 +129,23 @@ async function loadReservations() {
 
     document.querySelectorAll('.delete-btn').forEach((button) => {
       button.addEventListener('click', async () => {
-        const id = button.dataset.id;
-        const response = await fetch(`/api/reservations/${id}`, { method: 'DELETE' });
-        if (!response.ok && formMessage) {
-          formMessage.textContent = 'Failed to delete reservation.';
-          formMessage.style.color = '#b42318';
+        try {
+          const id = button.dataset.id;
+          const response = await fetch(`/api/reservations/${id}`, { method: 'DELETE' });
+          if (!response.ok && formMessage) {
+            formMessage.textContent = 'Failed to delete reservation.';
+            formMessage.style.color = '#b42318';
+          }
+          if (form?.elements.id.value === id) {
+            resetFormToCreate();
+          }
+          await loadReservations();
+        } catch (_error) {
+          if (formMessage) {
+            formMessage.textContent = 'Network error while deleting reservation.';
+            formMessage.style.color = '#b42318';
+          }
         }
-        if (form?.elements.id.value === id) {
-          resetFormToCreate();
-        }
-        await loadReservations();
       });
     });
   } catch (_error) {
@@ -144,40 +160,47 @@ if (form) {
     event.preventDefault();
     if (formMessage) formMessage.textContent = '';
 
-    const formData = new FormData(form);
-    const payload = Object.fromEntries(formData.entries());
-    const editingId = payload.id;
-    delete payload.id;
-    payload.party_size = Number(payload.party_size);
-    payload.reservation_time = normalizeDateTimeLocal(payload.reservation_time);
+    try {
+      const formData = new FormData(form);
+      const payload = Object.fromEntries(formData.entries());
+      const editingId = payload.id;
+      delete payload.id;
+      payload.party_size = Number(payload.party_size);
+      payload.reservation_time = normalizeDateTimeLocal(payload.reservation_time);
 
-    const isEditing = Boolean(editingId);
-    const endpoint = isEditing ? `/api/reservations/${editingId}` : '/api/reservations';
-    const method = isEditing ? 'PUT' : 'POST';
+      const isEditing = Boolean(editingId);
+      const endpoint = isEditing ? `/api/reservations/${editingId}` : '/api/reservations';
+      const method = isEditing ? 'PUT' : 'POST';
 
-    const response = await fetch(endpoint, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+      const response = await fetch(endpoint, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-    const body = await response.json();
-    if (!response.ok) {
+      const body = await response.json();
+      if (!response.ok) {
+        if (formMessage) {
+          formMessage.textContent = body.error || 'Failed to save reservation.';
+          formMessage.style.color = '#b42318';
+        }
+        return;
+      }
+
+      resetFormToCreate();
       if (formMessage) {
-        formMessage.textContent = body.error || 'Failed to save reservation.';
+        formMessage.textContent = isEditing
+          ? 'Reservation updated successfully.'
+          : 'Reservation saved successfully.';
+        formMessage.style.color = '#027a48';
+      }
+      await loadReservations();
+    } catch (_error) {
+      if (formMessage) {
+        formMessage.textContent = 'Network error while saving reservation.';
         formMessage.style.color = '#b42318';
       }
-      return;
     }
-
-    resetFormToCreate();
-    if (formMessage) {
-      formMessage.textContent = isEditing
-        ? 'Reservation updated successfully.'
-        : 'Reservation saved successfully.';
-      formMessage.style.color = '#027a48';
-    }
-    await loadReservations();
   });
 }
 
@@ -217,38 +240,48 @@ if (sqlForm) {
     if (sqlMessage) sqlMessage.textContent = '';
     if (sqlResult) sqlResult.textContent = '';
 
-    const formData = new FormData(sqlForm);
-    const payload = Object.fromEntries(formData.entries());
+    try {
+      const formData = new FormData(sqlForm);
+      const payload = Object.fromEntries(formData.entries());
 
-    const response = await fetch('/api/db/execute', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+      const response = await fetch('/api/db/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-    const body = await response.json();
-    if (!response.ok) {
+      const body = await response.json();
+      if (!response.ok) {
+        if (sqlMessage) {
+          sqlMessage.textContent = body.error || 'Failed to execute SQL.';
+          sqlMessage.style.color = '#b42318';
+        }
+        if (sqlResult) sqlResult.textContent = '';
+        return;
+      }
+
       if (sqlMessage) {
-        sqlMessage.textContent = body.error || 'Failed to execute SQL.';
+        sqlMessage.textContent = `${body.message} Rows affected/returned: ${body.rowcount}.`;
+        sqlMessage.style.color = '#027a48';
+      }
+      if (sqlResult) {
+        if (Array.isArray(body.rows) && body.rows.length > 0) {
+          sqlResult.textContent = JSON.stringify(body.rows, null, 2);
+        } else if (Array.isArray(body.rows)) {
+          sqlResult.textContent = '[]';
+        } else {
+          sqlResult.textContent = '';
+        }
+      }
+      await loadReservations();
+    } catch (_error) {
+      if (sqlMessage) {
+        sqlMessage.textContent = 'Network error while executing SQL.';
         sqlMessage.style.color = '#b42318';
       }
-      if (sqlResult) sqlResult.textContent = '';
-      return;
-    }
-
-    if (sqlMessage) {
-      sqlMessage.textContent = `${body.message} Rows affected/returned: ${body.rowcount}.`;
-      sqlMessage.style.color = '#027a48';
-    }
-    if (sqlResult) {
-      if (Array.isArray(body.rows) && body.rows.length > 0) {
-        sqlResult.textContent = JSON.stringify(body.rows, null, 2);
-      } else if (Array.isArray(body.rows)) {
-        sqlResult.textContent = '[]';
-      } else {
+      if (sqlResult) {
         sqlResult.textContent = '';
       }
     }
-    await loadReservations();
   });
 }

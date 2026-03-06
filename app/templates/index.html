@@ -107,7 +107,8 @@
           </label>
           <p class="sql-help">
             Supported: DDL (`CREATE`, `ALTER`, `DROP`, `TRUNCATE`), DML (`SELECT`, `INSERT`,
-            `UPDATE`, `DELETE`), DCL (`GRANT`, `REVOKE`).
+            `UPDATE`, `DELETE`), DCL (`GRANT`, `REVOKE`). Some commands are database-dependent
+            (for example, SQLite does not support `GRANT`/`REVOKE`/`TRUNCATE`).
           </p>
           <button type="submit">Run SQL</button>
         </form>

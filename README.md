@@ -1,4 +1,4 @@
-# Online Food Reservation System
+﻿# Online Food Reservation System
 
 Flask-based web app to create, update, list, and delete reservations, plus run controlled SQL commands from the UI.
 
@@ -7,18 +7,7 @@ Flask-based web app to create, update, list, and delete reservations, plus run c
 - Database Layer: Flask-SQLAlchemy
 - Frontend: HTML, CSS, JavaScript
 
-## App Flow (Flowchart)
-```mermaid
-flowchart TD
-    U[User] --> F[Frontend UI]
-    F -->|Create / Update / Delete Reservation| A[/Flask API: /api/reservations/]
-    F -->|List All / Upcoming| B[/Flask API: /api/reservations, /api/reservations/upcoming/]
-    F -->|Run SQL (DDL/DML/DCL)| C[/Flask API: /api/db/execute/]
-    A --> D[(SQLite or Postgres)]
-    B --> D
-    C --> D
-    D --> F
-```
+
 
 ## Features
 - Create reservation
@@ -32,6 +21,7 @@ flowchart TD
 - DDL: `CREATE`, `ALTER`, `DROP`, `TRUNCATE`
 - DML: `SELECT`, `INSERT`, `UPDATE`, `DELETE`
 - DCL: `GRANT`, `REVOKE`
+- Note: command support depends on database engine. On SQLite, `TRUNCATE`, `GRANT`, and `REVOKE` are not supported.
 
 ## Quick Start (Local)
 ```powershell

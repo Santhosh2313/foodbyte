@@ -1,4 +1,5 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
+from decimal import Decimal
 
 from flask import Blueprint, jsonify, render_template, request
 from sqlalchemy import text
@@ -14,6 +15,18 @@ COMMAND_GROUPS = {
     'DCL': {'GRANT', 'REVOKE'},
 }
 ALLOWED_SQL_COMMANDS = set().union(*COMMAND_GROUPS.values())
+
+UNSUPPORTED_BY_DIALECT = {
+    'sqlite': {'TRUNCATE', 'GRANT', 'REVOKE'},
+}
+
+
+def _serialize_value(value):
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    if isinstance(value, Decimal):
+        return float(value)
+    return value
 
 
 @bp.get('/')
@@ -132,6 +145,14 @@ def execute_db_operation():
         allowed_text = ', '.join(sorted(ALLOWED_SQL_COMMANDS))
         return jsonify({'error': f'Only {allowed_text} are allowed.'}), 400
 
+    dialect_name = db.session.bind.dialect.name if db.session.bind else ''
+    unsupported_commands = UNSUPPORTED_BY_DIALECT.get(dialect_name, set())
+    if first_token in unsupported_commands:
+        unsupported_text = ', '.join(sorted(unsupported_commands))
+        return jsonify(
+            {'error': f'{first_token} is not supported on {dialect_name}. Unsupported: {unsupported_text}.'}
+        ), 400
+
     if ';' in sql[:-1]:
         return jsonify({'error': 'Only one SQL statement is allowed per request.'}), 400
 
@@ -142,7 +163,7 @@ def execute_db_operation():
     try:
         result = db.session.execute(text(sql))
         if first_token == 'SELECT':
-            rows = [dict(row) for row in result.mappings().all()]
+            rows = [{key: _serialize_value(value) for key, value in row.items()} for row in result.mappings()]
             return jsonify(
                 {
                     'message': 'SELECT executed successfully.',
