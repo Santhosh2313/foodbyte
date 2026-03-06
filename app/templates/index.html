@@ -7,13 +7,20 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
   </head>
   <body>
+    <div class="bg-orb bg-orb-1" aria-hidden="true"></div>
+    <div class="bg-orb bg-orb-2" aria-hidden="true"></div>
     <main class="container">
       <header class="hero">
-        <p class="hero-kicker">Localhost Dining Desk</p>
+        <p class="hero-kicker">Foodbyte Control Room</p>
         <h1>Online Food Reservation System</h1>
         <p class="hero-subtitle">
-          Manage bookings and table flow with a vibrant control panel.
+          Keep service smooth with fast reservation updates, live list views, and controlled SQL operations.
         </p>
+        <div class="hero-tags" aria-label="Dashboard highlights">
+          <span class="chip">Real-Time List</span>
+          <span class="chip">Quick Edit</span>
+          <span class="chip">DBMS Console</span>
+        </div>
         <div class="hero-symbol" aria-hidden="true">
           <span class="plate"></span>
           <span class="fork"></span>
@@ -22,7 +29,10 @@
       </header>
 
       <section class="card accent-card">
-        <h2>Create Reservation</h2>
+        <div class="section-head">
+          <h2>Create Reservation</h2>
+          <p>Capture guest details accurately and update them anytime.</p>
+        </div>
         <form id="reservation-form">
           <input type="hidden" name="id" />
           <label>
@@ -64,8 +74,11 @@
       </section>
 
       <section class="card soft-card">
-        <div class="row">
-          <h2>Reservations</h2>
+        <div class="row panel-top">
+          <div class="section-head">
+            <h2>Reservations</h2>
+            <p>Switch between upcoming and full reservation history.</p>
+          </div>
           <button id="refresh-list-btn" type="button" class="secondary-btn">Refresh</button>
         </div>
         <div class="row actions-row">
@@ -78,20 +91,28 @@
       </section>
 
       <section class="card sql-card">
-        <h2>DBMS Operations (Local)</h2>
+        <div class="section-head">
+          <h2>DBMS Operations (Local)</h2>
+          <p>Run controlled SQL for DDL, DML, and DCL workflows.</p>
+        </div>
         <form id="sql-form">
           <label>
-            SQL Command (INSERT / UPDATE / DELETE / ALTER / DROP)
+            SQL Command (DDL / DML / DCL)
             <textarea
               name="sql"
               rows="5"
-              placeholder="Example: UPDATE reservation SET party_size = 6 WHERE id = 1"
+              placeholder="Example: SELECT * FROM reservation"
               required
             ></textarea>
           </label>
+          <p class="sql-help">
+            Supported: DDL (`CREATE`, `ALTER`, `DROP`, `TRUNCATE`), DML (`SELECT`, `INSERT`,
+            `UPDATE`, `DELETE`), DCL (`GRANT`, `REVOKE`).
+          </p>
           <button type="submit">Run SQL</button>
         </form>
         <p id="sql-message"></p>
+        <pre id="sql-result" aria-live="polite"></pre>
       </section>
     </main>
 

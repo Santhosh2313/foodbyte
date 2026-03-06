@@ -8,6 +8,13 @@ from .models import Reservation
 
 bp = Blueprint('main', __name__)
 
+COMMAND_GROUPS = {
+    'DDL': {'CREATE', 'ALTER', 'DROP', 'TRUNCATE'},
+    'DML': {'SELECT', 'INSERT', 'UPDATE', 'DELETE'},
+    'DCL': {'GRANT', 'REVOKE'},
+}
+ALLOWED_SQL_COMMANDS = set().union(*COMMAND_GROUPS.values())
+
 
 @bp.get('/')
 def index():
@@ -121,9 +128,9 @@ def execute_db_operation():
         return jsonify({'error': 'SQL is required.'}), 400
 
     first_token = sql.split(maxsplit=1)[0].upper() if sql else ''
-    allowed = {'INSERT', 'UPDATE', 'DELETE', 'ALTER', 'DROP'}
-    if first_token not in allowed:
-        return jsonify({'error': 'Only INSERT, UPDATE, DELETE, ALTER, DROP are allowed.'}), 400
+    if first_token not in ALLOWED_SQL_COMMANDS:
+        allowed_text = ', '.join(sorted(ALLOWED_SQL_COMMANDS))
+        return jsonify({'error': f'Only {allowed_text} are allowed.'}), 400
 
     if ';' in sql[:-1]:
         return jsonify({'error': 'Only one SQL statement is allowed per request.'}), 400
@@ -134,6 +141,16 @@ def execute_db_operation():
 
     try:
         result = db.session.execute(text(sql))
+        if first_token == 'SELECT':
+            rows = [dict(row) for row in result.mappings().all()]
+            return jsonify(
+                {
+                    'message': 'SELECT executed successfully.',
+                    'rowcount': len(rows),
+                    'rows': rows,
+                }
+            )
+
         db.session.commit()
     except Exception as exc:
         db.session.rollback()

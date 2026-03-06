@@ -3,6 +3,7 @@ const listContainer = document.getElementById('list-container');
 const formMessage = document.getElementById('form-message');
 const sqlForm = document.getElementById('sql-form');
 const sqlMessage = document.getElementById('sql-message');
+const sqlResult = document.getElementById('sql-result');
 const saveBtn = document.getElementById('save-btn');
 const cancelEditBtn = document.getElementById('cancel-edit-btn');
 const refreshListBtn = document.getElementById('refresh-list-btn');
@@ -214,6 +215,7 @@ if (sqlForm) {
   sqlForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (sqlMessage) sqlMessage.textContent = '';
+    if (sqlResult) sqlResult.textContent = '';
 
     const formData = new FormData(sqlForm);
     const payload = Object.fromEntries(formData.entries());
@@ -230,12 +232,22 @@ if (sqlForm) {
         sqlMessage.textContent = body.error || 'Failed to execute SQL.';
         sqlMessage.style.color = '#b42318';
       }
+      if (sqlResult) sqlResult.textContent = '';
       return;
     }
 
     if (sqlMessage) {
-      sqlMessage.textContent = `${body.message} Affected rows: ${body.rowcount}.`;
+      sqlMessage.textContent = `${body.message} Rows affected/returned: ${body.rowcount}.`;
       sqlMessage.style.color = '#027a48';
+    }
+    if (sqlResult) {
+      if (Array.isArray(body.rows) && body.rows.length > 0) {
+        sqlResult.textContent = JSON.stringify(body.rows, null, 2);
+      } else if (Array.isArray(body.rows)) {
+        sqlResult.textContent = '[]';
+      } else {
+        sqlResult.textContent = '';
+      }
     }
     await loadReservations();
   });
